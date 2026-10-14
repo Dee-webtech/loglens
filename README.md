@@ -30,7 +30,7 @@ curl -s -H "Authorization: Bearer $KEY" "localhost:8080/api/v1/top?k=5&level=err
 `cargo test` runs unit and API tests; `cargo bench` runs criterion (100k lines, with and without pruning).
 
 ## Limitations
-Single writer thread; segments are loaded fully into memory; a crash between segment write and WAL reset can duplicate documents; no TLS.
+Single writer thread; segments are loaded fully into memory; a crash between the segment write and WAL reset can actually duplicate documents; no TLS.
 
 ## Roadmap
 Compaction, retention and rate limiting (not included yet).
