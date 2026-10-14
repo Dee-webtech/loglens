@@ -1,3 +1,8 @@
 /target
 /data
 *.log
+*.seg
+*.tmp
+.env
+.idea/
+.vscode/
