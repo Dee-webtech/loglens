@@ -89,7 +89,7 @@ pub fn search(
     for seg in &st.segs {
         out.extend(from_segment(seg, q, from, to, limit, m, prune));
     }
-    out.sort_by(|a, b| b.ts.cmp(&a.ts));
+    out.sort_by_key(|a| std::cmp::Reverse(a.ts));
     out.truncate(limit);
     out
 }
