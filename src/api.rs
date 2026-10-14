@@ -84,8 +84,7 @@ async fn ingest_h(
     let docs = parse_payload(&body, now_ms())?;
     let n = docs.len();
     let rx = s.engine.enqueue(tenant, docs)?;
-    rx.await
-        .map_err(|_| Error::Io("writer stopped".into()))??;
+    rx.await.map_err(|_| Error::Io("writer stopped".into()))??;
     tracing::info!(tenant, accepted = n, "ingest");
     Ok(Json(json!({ "accepted": n })))
 }

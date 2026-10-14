@@ -55,7 +55,13 @@ fn new_tenant(h: &H, name: &str) -> (String, i64) {
     (key, id)
 }
 
-async fn call(app: &Router, method: &str, uri: &str, key: Option<&str>, body: &str) -> (StatusCode, String) {
+async fn call(
+    app: &Router,
+    method: &str,
+    uri: &str,
+    key: Option<&str>,
+    body: &str,
+) -> (StatusCode, String) {
     let mut b = Request::builder().method(method).uri(uri);
     if let Some(k) = key {
         b = b.header("authorization", format!("Bearer {k}"));
@@ -86,10 +92,19 @@ async fn rejects_missing_and_bad_keys() {
         ("POST", "/api/v1/logs"),
         ("GET", "/api/v1/top"),
     ] {
-        assert_eq!(call(&h.app, m, u, None, "").await.0, StatusCode::UNAUTHORIZED);
-        assert_eq!(call(&h.app, m, u, Some("nope"), "").await.0, StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            call(&h.app, m, u, None, "").await.0,
+            StatusCode::UNAUTHORIZED
+        );
+        assert_eq!(
+            call(&h.app, m, u, Some("nope"), "").await.0,
+            StatusCode::UNAUTHORIZED
+        );
     }
-    assert_eq!(call(&h.app, "GET", "/healthz", None, "").await.0, StatusCode::OK);
+    assert_eq!(
+        call(&h.app, "GET", "/healthz", None, "").await.0,
+        StatusCode::OK
+    );
 }
 
 #[tokio::test]
@@ -98,7 +113,12 @@ async fn tenants_cannot_see_each_other() {
     let (ka, _) = new_tenant(&h, "a");
     let (kb, _) = new_tenant(&h, "b");
     let line = r#"{"level":"info","service":"x","message":"alpha secret"}"#;
-    assert_eq!(call(&h.app, "POST", "/api/v1/logs", Some(&ka), line).await.0, StatusCode::OK);
+    assert_eq!(
+        call(&h.app, "POST", "/api/v1/logs", Some(&ka), line)
+            .await
+            .0,
+        StatusCode::OK
+    );
     assert_eq!(hits(&h, &ka, "/api/v1/search?q=secret").await.len(), 1);
     assert_eq!(hits(&h, &kb, "/api/v1/search?q=secret").await.len(), 0);
     assert_eq!(hits(&h, &kb, "/api/v1/search").await.len(), 0);
@@ -125,7 +145,12 @@ async fn ingest_then_search() {
     assert_eq!(stamps(&errs), vec![3000, 1000]);
     let ranged = hits(&h, &key, "/api/v1/search?q=timeout&from=1500&to=2500").await;
     assert_eq!(stamps(&ranged), vec![2000]);
-    assert_eq!(hits(&h, &key, "/api/v1/search?q=timeout&limit=1").await.len(), 1);
+    assert_eq!(
+        hits(&h, &key, "/api/v1/search?q=timeout&limit=1")
+            .await
+            .len(),
+        1
+    );
 
     let (st, top) = call(&h.app, "GET", "/api/v1/top?k=5&level=error", Some(&key), "").await;
     assert_eq!(st, StatusCode::OK);
@@ -133,7 +158,12 @@ async fn ingest_then_search() {
     assert_eq!(v["templates"].as_array().unwrap().len(), 2);
 
     let arr = r#"[{"level":"info","service":"web","message":"array form ok"}]"#;
-    assert_eq!(call(&h.app, "POST", "/api/v1/logs", Some(&key), arr).await.0, StatusCode::OK);
+    assert_eq!(
+        call(&h.app, "POST", "/api/v1/logs", Some(&key), arr)
+            .await
+            .0,
+        StatusCode::OK
+    );
     assert_eq!(hits(&h, &key, "/api/v1/search?q=array").await.len(), 1);
 
     let (st, err) = call(&h.app, "POST", "/api/v1/logs", Some(&key), "{nope").await;

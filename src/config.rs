@@ -2,7 +2,11 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "loglens", version, about = "Lightweight multi-tenant log search")]
+#[command(
+    name = "loglens",
+    version,
+    about = "Lightweight multi-tenant log search"
+)]
 pub struct Cli {
     #[arg(long, global = true, default_value = "data")]
     pub data_dir: PathBuf,

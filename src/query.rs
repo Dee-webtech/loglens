@@ -68,8 +68,20 @@ mod tests {
 
     #[test]
     fn empty_and_punctuation_queries() {
-        assert_eq!(parse(""), Query { must: vec![], not: vec![] });
-        assert_eq!(parse("-"), Query { must: vec![], not: vec![] });
+        assert_eq!(
+            parse(""),
+            Query {
+                must: vec![],
+                not: vec![]
+            }
+        );
+        assert_eq!(
+            parse("-"),
+            Query {
+                must: vec![],
+                not: vec![]
+            }
+        );
         assert_eq!(parse("db-error").must, vec!["db", "error"]);
     }
 }

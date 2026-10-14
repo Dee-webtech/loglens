@@ -43,7 +43,9 @@ async fn real_main() -> Result<(), BoxErr> {
 async fn serve(data_dir: PathBuf, addr: String) -> Result<(), BoxErr> {
     tracing_subscriber::fmt()
         .json()
-        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+        )
         .init();
     std::fs::create_dir_all(&data_dir)?;
     let metrics = Arc::new(Metrics::default());

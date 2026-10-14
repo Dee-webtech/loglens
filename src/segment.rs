@@ -187,7 +187,9 @@ mod tests {
     fn corruption_is_detected() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("seg-00000002.seg");
-        Segment::build(2, gen_logs(200, 9, 1_000)).write(&path).unwrap();
+        Segment::build(2, gen_logs(200, 9, 1_000))
+            .write(&path)
+            .unwrap();
         let mut raw = std::fs::read(&path).unwrap();
         let mid = raw.len() / 2;
         raw[mid] ^= 0xff;
