@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogLens</title>
+<style>
+:root{--bg:#0f1419;--panel:#171d25;--line:#263040;--text:#dde4ee;--muted:#8a96a8;--accent:#2f81f7;--err:#ff6b6b;--warn:#f5b84a;--ok:#5fd38d}
+@media (prefers-color-scheme:light){:root{--bg:#f5f7fa;--panel:#fff;--line:#dde3ec;--text:#1c2430;--muted:#5d6b7e;--accent:#1f6feb;--err:#d1242f;--warn:#9a6700;--ok:#1a7f37}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,sans-serif}
+header,main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 12px}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+form{display:flex;gap:8px;flex-wrap:wrap}
+input,button{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+#q{flex:2 1 280px}
+#key{flex:1 1 200px}
+button{background:var(--accent);border-color:var(--accent);color:#fff;cursor:pointer}
+.grid{display:grid;grid-template-columns:1fr 300px;gap:16px}
+@media (max-width:800px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.msg{word-break:break-word}
+.error{background:var(--err);color:#fff;padding:10px 12px;border-radius:6px;margin:0 0 12px}
+.lv-error{color:var(--err)}.lv-warn{color:var(--warn)}.lv-info{color:var(--ok)}
+.muted{color:var(--muted);white-space:nowrap}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);word-break:break-word}
+</style>
+</head>
+<body>
+<header>
+  <h1>LogLens</h1>
+  <form id="form">
+    <input id="key" type="password" placeholder="API key (ll_...)" autocomplete="off" aria-label="API key">
+    <input id="q" placeholder="timeout -retry level:error service:api" aria-label="Query">
+    <button type="submit">Search</button>
+  </form>
+</header>
+<main>
+  <div id="err" class="error" role="alert" hidden></div>
+  <div class="grid">
+    <section class="card">
+      <h2>Results <span id="count" class="muted"></span></h2>
+      <table>
+        <thead><tr><th>Time (UTC)</th><th>Level</th><th>Service</th><th>Message</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+    <aside class="card">
+      <h2>Top error templates</h2>
+      <ul id="top"></ul>
+    </aside>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+try { $('key').value = sessionStorage.getItem('ll_key') || ''; } catch (e) {}
+
+function fail(e) {
+  const b = $('err');
+  b.textContent = e ? e.message : '';
+  b.hidden = !e;
+}
+
+async function api(path) {
+  const r = await fetch(path, { headers: { Authorization: 'Bearer ' + $('key').value.trim() } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(r.status + ': ' + (j.error || r.statusText));
+  return j;
+}
+
+function cell(tr, text, cls) {
+  const td = document.createElement('td');
+  td.textContent = text;
+  if (cls) td.className = cls;
+  tr.appendChild(td);
+}
+
+async function run(ev) {
+  if (ev) ev.preventDefault();
+  fail(null);
+  try { sessionStorage.setItem('ll_key', $('key').value.trim()); } catch (e) {}
+  try {
+    const [s, t] = await Promise.all([
+      api('/api/v1/search?limit=200&q=' + encodeURIComponent($('q').value)),
+      api('/api/v1/top?k=10&level=error')
+    ]);
+    const body = $('rows');
+    body.replaceChildren();
+    for (const h of s.hits) {
+      const tr = document.createElement('tr');
+      cell(tr, new Date(h.ts).toISOString().replace('T', ' ').slice(0, 23), 'muted');
+      cell(tr, h.level, 'lv-' + h.level.toLowerCase());
+      cell(tr, h.service);
+      cell(tr, h.message, 'msg');
+      body.appendChild(tr);
+    }
+    $('count').textContent = '(' + s.count + ')';
+    const ul = $('top');
+    ul.replaceChildren();
+    for (const x of t.templates) {
+      const li = document.createElement('li');
+      const a = document.createElement('span');
+      a.textContent = x.template;
+      const b = document.createElement('strong');
+      b.textContent = x.count;
+      li.append(a, b);
+      ul.appendChild(li);
+    }
+    if (!t.templates.length) ul.textContent = 'No errors found';
+  } catch (e) {
+    fail(e);
+  }
+}
+
+$('form').addEventListener('submit', run);
+</script>
+</body>
+</html>
